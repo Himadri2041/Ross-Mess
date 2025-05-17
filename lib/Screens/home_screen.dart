@@ -1,46 +1,78 @@
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Appcolors.dart';
-import '../Widgets/bottom_nav_bar.dart';
+import 'cart_screen.dart';
 import 'order_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> todayMenu = [
-    {
-      "meal": "Breakfast",
-      "time": "8:00 AM - 9:30 AM",
-      "main": "Aloo Paratha & Pickle",
+class HomeScreen extends StatefulWidget {
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-    },
-    {
-      "meal": "Lunch",
-      "time": "12:00 PM - 2:00 PM",
-      "main": "Arhar Dal · Aloo Bhurji ·  Gulab Jamun",
+class _HomeScreenState extends State<HomeScreen> {
+  List<Map<String, dynamic>> todayMenu = [];
+  bool isLoading = true;
 
-    },
-    {
-      "meal": "Evening Snacks",
-      "time": "4:00 PM - 4:30 PM",
-      "main": "Bread Roll/Samosa",
-    },
-    {
-      "meal": "Dinner",
-      "time": "4:00 PM - 4:30 PM",
-      "main": "Bread Roll/Samosa",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    fetchMenu();
+  }
+
+  Future<void> fetchMenu() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('menu').doc('today').get();
+
+      if (doc.exists) {
+        final data = doc.data();
+
+        setState(() {
+          todayMenu = [
+            {
+              'meal': 'Breakfast',
+              'time': '8:00 AM - 9:30 AM',
+              'main': data?['breakfast'] ?? 'Not available',
+            },
+            {
+              'meal': 'Lunch',
+              'time': '12:00 PM - 2:00 PM',
+              'main': data?['lunch'] ?? 'Not available',
+            },
+            {
+              'meal': 'Dinner',
+              'time': '8:00 PM - 9:30 PM',
+              'main': data?['dinner'] ?? 'Not available',
+            },
+          ];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching menu: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mess Menu",style:TextStyle(color:Colors.white70)),
+        title: const Text("Mess Menu", style: TextStyle(color: Colors.white70)),
         backgroundColor: MessColors.PrimaryColor,
         centerTitle: false,
       ),
       backgroundColor: MessColors.Backcolor,
-      body:
-      ListView.builder(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : todayMenu.isEmpty
+          ? const Center(child: Text("No menu available for today."))
+          : ListView.builder(
         itemCount: todayMenu.length,
         padding: const EdgeInsets.all(12),
         itemBuilder: (context, index) {
@@ -87,20 +119,14 @@ class HomeScreen extends StatelessWidget {
                   meal['main'],
                   style: const TextStyle(fontSize: 15),
                 ),
-                const SizedBox(height: 8),
-
-                /// Regular Items
-
-
               ],
             ),
           );
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: MessColors.PrimaryColor,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white70,
+        backgroundColor: Colors.red,
+        selectedItemColor: Colors.blue,
         items:  [
           BottomNavigationBarItem(
             icon: IconButton(icon:Icon(Icons.home), onPressed: () {
@@ -117,14 +143,18 @@ class HomeScreen extends StatelessWidget {
           ),
           BottomNavigationBarItem(
             icon: IconButton(icon:Icon(Icons.shopping_cart), onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>HomeScreen()  ));
+              Navigator.push(context,MaterialPageRoute(builder:(context)=>CartScreen()  ));
             },),
             label: "Cart",
           ),
+          BottomNavigationBarItem(
+            icon: IconButton(icon:Icon(Icons.payment), onPressed: () {
+              Navigator.push(context,MaterialPageRoute(builder:(context)=>HomeScreen()  ));
+            },),
+            label: "Bill",
+          ),
         ],
       ),
-
     );
   }
 }
-

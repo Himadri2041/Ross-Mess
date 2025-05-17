@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ross_mess_app/Appcolors.dart';
+import '../Providers/cart_provider.dart';
 import '../models/order_item.dart';
-
+import 'package:provider/provider.dart';
 class OrderCard extends StatelessWidget {
   final OrderItem item;
 
@@ -9,6 +10,7 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cart = Provider.of<CartProvider>(context, listen: false);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 4,
@@ -58,7 +60,10 @@ class OrderCard extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-
+                cart.addItem(item);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${item.title} added to cart')),
+                );
               },
               style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
