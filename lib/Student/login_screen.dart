@@ -3,7 +3,7 @@ import 'package:ross_mess_app/Student/home_screen.dart';
 import 'package:ross_mess_app/Appcolors.dart';
 
 import '../Widgets/bottom_nav_bar.dart';
-import '../sign_up_screen.dart';
+import 'sign_up_screen.dart';
 import '../Screens/Admin/home_page.dart';
 import 'email_login.dart';
 class LoginSignupScreen extends StatelessWidget {
