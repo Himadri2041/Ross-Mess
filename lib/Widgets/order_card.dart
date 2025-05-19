@@ -14,6 +14,7 @@ class OrderCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 4,
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -45,7 +46,7 @@ class OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${item.price.toStringAsFixed(2)}',
+                    '\₹${item.price.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[700],
@@ -69,10 +70,10 @@ class OrderCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor:MessColors.PrimaryColor
+                  backgroundColor:MessColors.test
 
               ),
-              child: const Text('Add',style: TextStyle(color:Colors.white),),
+              child: const Text('Add',style: TextStyle(color:Colors.white,fontWeight: FontWeight.w600,fontSize:16)),
             ),
 
           ],

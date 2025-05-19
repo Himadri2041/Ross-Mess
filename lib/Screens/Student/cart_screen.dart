@@ -236,9 +236,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../Providers/cart_provider.dart';
-import '../widgets/cart_card.dart';
-import '../Screens/order_status.dart';
+import '../../Appcolors.dart';
+import '../../Providers/cart_provider.dart';
+import '../../Widgets/cart_card.dart';
+import '../order_status.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -249,6 +250,7 @@ class CartScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+
         title: const Text('Confirm Order'),
         content: const Text('Are you sure you want to place this order?'),
         actions: [
@@ -257,7 +259,8 @@ class CartScreen extends StatelessWidget {
               child: const Text('Cancel')),
           ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirm')),
+              child: const Text('Confirm'),
+               ),
         ],
       ),
     );
@@ -287,68 +290,76 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Cart')),
-      body: cart.items.isEmpty
-          ? const Center(child:OrderStatusListener(),)
-          : Column(
-        children: [
-
-          Expanded(
-            child: ListView.builder(
-              itemCount: cart.items.length,
-              itemBuilder: (ctx, i) {
-                final item = cart.items.values.toList()[i];
-                return CartCard(item: item);
-              },
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  offset: const Offset(0, -1),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Total:',
-                        style: Theme.of(context).textTheme.titleLarge),
-                    Text(
-                      '\₹${cart.totalPrice.toStringAsFixed(2)}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(color: Colors.green[700]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _placeOrder(context, cart),
-                  icon: const Icon(Icons.send),
-                  label: const Text('Place Order'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        backgroundColor: MessColors.test,
+        title: const Text('Your Cart',style: TextStyle(color: Colors.white,fontFamily:'Chakra_Petch',fontWeight: FontWeight.w900),),
       ),
+      backgroundColor: MessColors.Back2color,
+      body: cart.items.isEmpty
+          ? const Center(
+              child: OrderStatusListener(),
+            )
+          : Padding(
+            padding: const EdgeInsets.fromLTRB(0,10,0,0),
+            child: Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: cart.items.length,
+                      itemBuilder: (ctx, i) {
+                        final item = cart.items.values.toList()[i];
+                        return CartCard(item: item);
+                      },
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          offset: const Offset(0, -1),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Total',
+                                style: Theme.of(context).textTheme.titleLarge),
+                            Text(
+                              '\₹${cart.totalPrice.toStringAsFixed(2)}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(color: Colors.black),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _placeOrder(context, cart),
+                          icon: const Icon(Icons.send),
+                          label: const Text('Place Order'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ),
     );
   }
 }

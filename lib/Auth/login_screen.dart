@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ross_mess_app/Student/home_screen.dart';
 import 'package:ross_mess_app/Appcolors.dart';
-
-import '../Widgets/bottom_nav_bar.dart';
-import 'sign_up_screen.dart';
 import '../Screens/Admin/home_page.dart';
+import '../Screens/Student/home_screen.dart';
+import 'sign_up_screen.dart';
 import 'email_login.dart';
 class LoginSignupScreen extends StatelessWidget {
   @override
@@ -21,23 +19,21 @@ class LoginSignupScreen extends StatelessWidget {
             SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(context,MaterialPageRoute(builder:(context)=>LoginScreen()));
+                Navigator.push(context,MaterialPageRoute(builder:(context)=>AdminHome()));
               },
-              child: Text('Log In',style: TextStyle(color:Colors.white)),
-              style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50),backgroundColor:MessColors.PrimaryColor ),
+              child: Text('Log In',style: TextStyle(color:Colors.white,fontWeight: FontWeight.bold,fontSize:18 )),
+              style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50),backgroundColor:MessColors.test ),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 20),
             OutlinedButton(
               onPressed: () {
                 Navigator.push(context,MaterialPageRoute(builder:(context)=>SignupScreen()));
 
               },
-              child: Text('Sign Up'),
-              style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 50)),
+              child: Text('Sign Up',style: TextStyle(color:Colors.white,fontWeight: FontWeight.bold,fontSize:18 )),
+              style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 50),backgroundColor:MessColors.test ),
             ),
             SizedBox(height: 30),
-            Text("Or", style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 10),
 
           ],
         ),

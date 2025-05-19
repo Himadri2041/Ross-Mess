@@ -117,8 +117,8 @@ class CartCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 item.image,
-                width: 60,
-                height: 60,
+                width: 80,
+                height: 80,
                 fit: BoxFit.cover,
               ),
             ),
@@ -136,7 +136,7 @@ class CartCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${item.price.toStringAsFixed(2)}',
+                    '\₹${item.price.toStringAsFixed(2)}',
                     style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],
@@ -147,17 +147,17 @@ class CartCard extends StatelessWidget {
                 IconButton(
                   onPressed: () => cart.decreaseQuantity(item.title),
                   icon: const Icon(Icons.remove),
-                  color: Colors.blue[700],
+                  color: Colors.green[700],
                   splashRadius: 20,
                 ),
                 Text(
                   '${item.quantity}',
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 18),
                 ),
                 IconButton(
                   onPressed: () => cart.increaseQuantity(item.title),
                   icon: const Icon(Icons.add),
-                  color: Colors.blue[700],
+                  color: Colors.green[700],
                   splashRadius: 20,
                 ),
               ],

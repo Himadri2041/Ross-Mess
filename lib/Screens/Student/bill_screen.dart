@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/order_item.dart';
+import '../../Models/order_item.dart';
 
 class BillScreen extends StatelessWidget {
   final List<OrderItem> selectedItems;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../Appcolors.dart';
+
 class MenuUploadScreen extends StatefulWidget {
   @override
   _MenuUploadScreenState createState() => _MenuUploadScreenState();
@@ -27,29 +29,57 @@ class _MenuUploadScreenState extends State<MenuUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Upload Today's Menu")),
+      appBar: AppBar(
+          backgroundColor: MessColors.test,
+          centerTitle: false,
+          title: const Text(
+            "Upload Today's Menu",
+            style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Chakra_Petch',
+                fontWeight: FontWeight.w900),
+          )),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(children: [
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Breakfast'),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Breakfast',
+                border: OutlineInputBorder(),
+              ),
               onChanged: (val) => breakfast = val,
-              validator: (val) => val!.isEmpty ? "Required" : null,
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Lunch'),
+            const SizedBox(height: 18),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Lunch',
+                border: OutlineInputBorder(),
+              ),
               onChanged: (val) => lunch = val,
-              validator: (val) => val!.isEmpty ? "Required" : null,
             ),
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Dinner'),
+            const SizedBox(height: 18),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Dinner',
+                border: OutlineInputBorder(),
+              ),
               onChanged: (val) => dinner = val,
-              validator: (val) => val!.isEmpty ? "Required" : null,
             ),
             SizedBox(height: 20),
-            ElevatedButton(child: Text("Upload Menu"), onPressed: uploadMenu),
+            ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MessColors.test,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: uploadMenu,
+                child: const Text("Upload Menu")),
           ]),
         ),
       ),

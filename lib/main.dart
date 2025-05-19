@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:ross_mess_app/Screens/splash_screen.dart';
 
 import 'Providers/cart_provider.dart';
-import 'Student/login_screen.dart';
+import 'Auth/login_screen.dart';
 import 'firebase_options.dart';
 //
 // Future<void> main() async {
@@ -79,7 +79,7 @@ class _MyAppState extends State<MyApp> {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
       home: SplashScreen(),

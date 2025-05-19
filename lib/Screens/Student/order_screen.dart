@@ -171,10 +171,9 @@
 // }
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart';
-import '../models/order_item.dart';
-import '../widgets/order_card.dart';
+import '../../Appcolors.dart';
+import '../../models/order_item.dart';
+import '../../Widgets/order_card.dart';
 import 'cart_screen.dart';
 import 'home_screen.dart';
 
@@ -185,19 +184,24 @@ class OrderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Food Packages'),
+        backgroundColor: MessColors.test,
+        title: const Text('Order Food',style: TextStyle(color: Colors.white,fontFamily:'Chakra_Petch',fontWeight: FontWeight.w900),),
       ),
+      backgroundColor: MessColors.Back2color,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('orderItems')
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return const Center(child: Text('Error loading data'));
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError)
+            return const Center(child: Text('Error loading data'));
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
 
           final docs = snapshot.data!.docs;
-          if (docs.isEmpty) return const Center(child: Text('No order items available'));
+          if (docs.isEmpty)
+            return const Center(child: Text('No order items available'));
 
           return ListView.builder(
             itemCount: docs.length,
@@ -213,35 +217,49 @@ class OrderScreen extends StatelessWidget {
           );
         },
       ),
-
-
-    bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.red,
-        selectedItemColor: Colors.blue,
-        items:  [
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: MessColors.test,
+        unselectedItemColor: Colors.black,
+        items: [
           BottomNavigationBarItem(
-            icon: IconButton(icon:Icon(Icons.home), onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>HomeScreen()  ));
-            },),
+            icon: IconButton(
+              icon: Icon(Icons.home),
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()));
+              },
+            ),
             label: "Home",
-
           ),
           BottomNavigationBarItem(
-            icon: IconButton(icon:Icon(Icons.list_alt), onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>OrderScreen()  ));
-            },),
+            icon: IconButton(
+              icon: Icon(Icons.list_alt),
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => OrderScreen()));
+              },
+            ),
             label: "Orders",
           ),
           BottomNavigationBarItem(
-            icon: IconButton(icon:Icon(Icons.shopping_cart), onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>CartScreen()  ));
-            },),
+            icon: IconButton(
+              icon: Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => CartScreen()));
+              },
+            ),
             label: "Cart",
           ),
           BottomNavigationBarItem(
-            icon: IconButton(icon:Icon(Icons.payment), onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>HomeScreen()  ));
-            },),
+            icon: IconButton(
+              icon: Icon(Icons.payment),
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()));
+              },
+            ),
             label: "Bill",
           ),
         ],
