@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ross_mess_app/Screens/Admin/extras_upload_page.dart';
+import 'package:ross_mess_app/Screens/Admin/meals.dart';
 import 'menu_upload_page.dart';
 import 'order_page.dart';
 
@@ -22,6 +23,11 @@ class AdminHome extends StatelessWidget {
               child: Text("Upload Menu"),
               onPressed: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => MenuUploadScreen())),
+            ),
+            ElevatedButton(
+              child: Text("Mark Attendance"),
+              onPressed: () => Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => (MarkAttendanceScreen()))),
             ),
           ],
         ),

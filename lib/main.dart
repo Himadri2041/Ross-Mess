@@ -1,17 +1,44 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ross_mess_app/Screens/splash_screen.dart';
 
 import 'Providers/cart_provider.dart';
-import 'Screens/login_screen.dart';
+import 'Student/login_screen.dart';
 import 'firebase_options.dart';
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
+//
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp(
+//     options: DefaultFirebaseOptions.currentPlatform,
+//   );
+//   runApp(
+//       MultiProvider(
+//         providers: [
+//           ChangeNotifierProvider(create: (_) => CartProvider()),
+//         ],
+//         child: MyApp(),
+//       ));
+// }
+//
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+//
+//   // This widget is the root of your application.
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+    await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  print('Background message received: ${message.messageId}');
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   runApp(
       MultiProvider(
         providers: [
@@ -21,10 +48,17 @@ Future<void> main() async {
       ));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

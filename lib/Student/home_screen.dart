@@ -1,8 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../Appcolors.dart';
 import 'cart_screen.dart';
 import 'order_screen.dart';
+import '../Screens/order_status.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     fetchMenu();
   }
-
+//fetch menu
   Future<void> fetchMenu() async {
     try {
       final doc = await FirebaseFirestore.instance.collection('menu').doc('today').get();
@@ -58,9 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
-
+//menu display
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Mess Menu", style: TextStyle(color: Colors.white70)),
@@ -96,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 /// Meal Header
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -124,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
+      //bottomnavbar
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.red,
         selectedItemColor: Colors.blue,

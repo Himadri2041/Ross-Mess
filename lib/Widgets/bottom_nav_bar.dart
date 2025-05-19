@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ross_mess_app/Screens/home_screen.dart';
+import 'package:ross_mess_app/Student/home_screen.dart';
 
-import '../Screens/order_screen.dart';
+import '../Student/order_screen.dart';
 
 class HomeScreenWithNav extends StatefulWidget {
   @override

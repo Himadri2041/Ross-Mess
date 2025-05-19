@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ross_mess_app/Screens/home_screen.dart';
+import 'package:ross_mess_app/Student/home_screen.dart';
 import 'package:ross_mess_app/Appcolors.dart';
 
 import '../Widgets/bottom_nav_bar.dart';
-import 'Admin/home_page.dart';
+import '../sign_up_screen.dart';
+import '../Screens/Admin/home_page.dart';
+import 'email_login.dart';
 class LoginSignupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -19,14 +21,17 @@ class LoginSignupScreen extends StatelessWidget {
             SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(context,MaterialPageRoute(builder:(context)=>HomeScreen()  ));
+                Navigator.push(context,MaterialPageRoute(builder:(context)=>LoginScreen()));
               },
               child: Text('Log In',style: TextStyle(color:Colors.white)),
               style: ElevatedButton.styleFrom(minimumSize: Size(double.infinity, 50),backgroundColor:MessColors.PrimaryColor ),
             ),
             SizedBox(height: 10),
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(context,MaterialPageRoute(builder:(context)=>SignupScreen()));
+
+              },
               child: Text('Sign Up'),
               style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 50)),
             ),
