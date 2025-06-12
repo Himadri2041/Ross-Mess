@@ -10,12 +10,20 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   String title = '';
   double price = 0;
-  String selectedImage = 'maggie.png';
+  String? selectedImage;
 
   final List<String> availableImages = [
     'maggie.png',
-
+    'burger.png',
+    'pasta.png',
+    'friends_package.png',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    selectedImage = availableImages.first;
+  }
 
   void uploadOrderItem() async {
     if (_formKey.currentState!.validate()) {
@@ -29,14 +37,16 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order item added!')),
+        SnackBar(
+          content: Text('🎉 Item uploaded successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
 
-      // Reset form
       setState(() {
         title = '';
         price = 0;
-        selectedImage = availableImages[0];
+        selectedImage = availableImages.first;
       });
       _formKey.currentState!.reset();
     }
@@ -45,55 +55,125 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: Text('Admin: Add Order Item'),
+        backgroundColor: Colors.amber[400],
+        elevation: 2,
+        title: Text('Add Extra Item', style: TextStyle(color: Colors.black)),
+        iconTheme: IconThemeData(color: Colors.black),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Title'),
-                onSaved: (val) => title = val!.trim(),
-                validator: (val) =>
-                val == null || val.isEmpty ? 'Enter a title' : null,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 6,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Add Extra Item",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Title Field
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Item Name',
+                        prefixIcon: Icon(Icons.fastfood),
+                        fillColor: Colors.white,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onSaved: (val) => title = val!.trim(),
+                      validator: (val) => val == null || val.isEmpty ? 'Enter a title' : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Price Field
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Price',
+                        prefixIcon: Icon(Icons.currency_rupee),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        fillColor: Colors.white,
+                        filled: true,
+
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      onSaved: (val) => price = double.tryParse(val!) ?? 0,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) return 'Enter price';
+                        if (double.tryParse(val) == null) return 'Enter valid number';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Image Dropdown
+                    DropdownButtonFormField<String>(
+                      value: availableImages.contains(selectedImage) ? selectedImage : null,
+                      decoration: InputDecoration(
+                        labelText: 'Select Image',
+                        prefixIcon: Icon(Icons.image),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      items: availableImages.map((imageName) {
+                        return DropdownMenuItem(
+                          value: imageName,
+                          child: Text(
+                            imageName.split('.').first.replaceAll('_', ' ').toUpperCase(),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          selectedImage = val;
+                        });
+                      },
+                      validator: (val) => val == null ? 'Please select an image' : null,
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Upload Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: uploadOrderItem,
+                        icon: Icon(Icons.upload),
+                        label: Text("Upload Item"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: const TextStyle(fontSize: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Price'),
-                keyboardType:
-                TextInputType.numberWithOptions(decimal: true),
-                onSaved: (val) => price = double.tryParse(val!) ?? 0,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Enter price';
-                  if (double.tryParse(val) == null)
-                    return 'Enter valid number';
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: selectedImage,
-                decoration: InputDecoration(labelText: 'Select Image'),
-                items: availableImages.map((imageName) {
-                  return DropdownMenuItem(
-                    value: imageName,
-                    child: Text(imageName.split('.').first.replaceAll('_', ' ').toUpperCase()),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    selectedImage = val!;
-                  });
-                },
-              ),
-              SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: uploadOrderItem,
-                child: Text('Add Item'),
-              )
-            ],
+            ),
           ),
         ),
       ),

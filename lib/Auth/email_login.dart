@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../Appcolors.dart';
+import 'package:flutter_svg/svg.dart';
 import '../Screens/Admin/home_page.dart';
-
-import '../Screens/Student/home_screen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
-  State<LoginScreen> createState() => _StudentLoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _StudentLoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _isLoading = false;
 
   void _login() async {
     setState(() => _isLoading = true);
-
     try {
       final authResult = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -32,120 +27,107 @@ class _StudentLoginScreenState extends State<LoginScreen> {
           .collection('users')
           .doc(authResult.user!.uid)
           .get();
+      final isAdmin = userDoc.data()?['isAdmin'] ?? false;
 
-      final isAdmin = userDoc['isAdmin'] ?? false;
-      final rollNo = userDoc['rollNo'];
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => isAdmin
-              ? AdminHome()
-              : HomeScreen(),
-        ),
-      );
+      if (mounted) {
+        if (isAdmin) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminHome()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("You are not an admin.")),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed. Please try again.';
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: ${e.toString()}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: ${e.toString()}')),
+      );
     }
-
     setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    //   body: Padding(
-    //     padding: const EdgeInsets.all(16),
-    //     child: Column(
-    //       children: [
-    //         TextField(
-    //           controller: emailController,
-    //           decoration: const InputDecoration(labelText: 'Email'),
-    //         ),
-    //         TextField(
-    //           controller: passwordController,
-    //           decoration: const InputDecoration(labelText: 'Password'),
-    //           obscureText: true,
-    //         ),
-    //         const SizedBox(height: 20),
-    //         _isLoading
-    //             ? const Center(child: CircularProgressIndicator())
-    //             : ElevatedButton(
-    //           onPressed: _login,
-    //           child: const Text('Login'),
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    // );
-      body:Stack(
-
+      body: Stack(
         children: [
-          // 👇 Background image
-          SizedBox.expand(
-            child: Image.asset(
-              'Assets/images/maggie.png', // replace with your image path
+          // Background image
+          Positioned.fill(
+            child: SvgPicture.asset(
+              'Assets/images/login.svg',
               fit: BoxFit.cover,
             ),
           ),
-
-          Container(
-            color: Colors.black.withOpacity(0.4),
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+            ),
           ),
 
           Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Login", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  const TextField(
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Admin Login",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const TextField(
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : ElevatedButton(
-
-
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:MessColors.test,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: "Email",
+                        border: OutlineInputBorder(),
                       ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
-                    onPressed: _login,
-                    child: const Text("Log In"),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: "Password",
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child:
+                  _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                      onPressed: _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[500],
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text("Login",style: TextStyle(color:Colors.black,fontSize: 18),),
+                    ),),
+                  ],
+                ),
               ),
             ),
           ),

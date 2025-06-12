@@ -169,25 +169,74 @@
 //     );
 //   }
 // }
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../Appcolors.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../Providers/cart_provider.dart';
+import '../../Widgets/cart_card.dart';
 import '../../models/order_item.dart';
-import '../../Widgets/order_card.dart';
+import '../../Appcolors.dart';
 import 'cart_screen.dart';
-import 'home_screen.dart';
+import 'home_screen.dart'; // If you're using a custom color file
 
 class OrderScreen extends StatelessWidget {
   const OrderScreen({super.key});
+
+  void addToCart(BuildContext context, Map<String, dynamic> data) async {
+    try {
+      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
+      final item = OrderItem(
+        title: data['title'],
+        price: (data['price'] ?? 0).toDouble(),
+        image: 'Assets/images/${data['imageName']}',
+      );
+
+      await FirebaseFirestore.instance.collection('cart').add({
+        'title': item.title,
+        'price': item.price,
+        'imageName': data['imageName'],
+        'quantity': 1,
+        'timestamp': Timestamp.now(),
+      });
+
+      cartProvider.addItem(item);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${item.title} added to cart'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding item to cart: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: MessColors.test,
-        title: const Text('Order Food',style: TextStyle(color: Colors.white,fontFamily:'Chakra_Petch',fontWeight: FontWeight.w900),),
+        backgroundColor: Colors.amber[500],
+        title: const Text(
+          'Order Food',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Chakra_Petch',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 4,
+        centerTitle: true,
       ),
-      backgroundColor: MessColors.Back2color,
+      backgroundColor: Colors.grey.shade100,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('orderItems')
@@ -203,62 +252,152 @@ class OrderScreen extends StatelessWidget {
           if (docs.isEmpty)
             return const Center(child: Text('No order items available'));
 
-          return ListView.builder(
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              final item = OrderItem(
-                title: data['title'] ?? 'No Title',
-                price: (data['price'] ?? 0).toDouble(),
-                image: 'Assets/images/${data['imageName']}',
+              final data = docs[index].data()! as Map<String, dynamic>;
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'Assets/images/${data['imageName']}',
+                        width: 90,
+                        height: 90,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data['title'] ?? 'No Title',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          Text(
+                            '₹${(data['price'] ?? 0).toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Add Button
+                    IconButton(
+                      icon:
+                          Icon(Icons.add_circle, color: Colors.amber, size: 30),
+                      onPressed: () => addToCart(context, {
+                        'title': data['title'],
+                        'price': data['price'],
+                        'imageName': data['imageName'],
+                      }),
+                    ),
+                  ],
+                ),
               );
-              return OrderCard(item: item);
             },
           );
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black,
-        selectedItemColor: MessColors.test,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black,
+        showUnselectedLabels: true,
+        currentIndex: 1,
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
-            icon: IconButton(
-              icon: Icon(Icons.home),
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()));
-              },
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.home),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                      context, MaterialPageRoute(builder: (_) => HomeScreen()));
+                },
+              ),
             ),
             label: "Home",
           ),
           BottomNavigationBarItem(
-            icon: IconButton(
-              icon: Icon(Icons.list_alt),
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => OrderScreen()));
-              },
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.list_alt),
+                onPressed: () {},
+              ),
             ),
             label: "Orders",
           ),
           BottomNavigationBarItem(
-            icon: IconButton(
-              icon: Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => CartScreen()));
-              },
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const CartScreen()));
+                },
+              ),
             ),
             label: "Cart",
           ),
           BottomNavigationBarItem(
-            icon: IconButton(
-              icon: Icon(Icons.payment),
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()));
-              },
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.receipt_long),
+                onPressed: () {
+                  Navigator.push(
+                      context, MaterialPageRoute(builder: (_) => HomeScreen()));
+                },
+              ),
             ),
             label: "Bill",
           ),

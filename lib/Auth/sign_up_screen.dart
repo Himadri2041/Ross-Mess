@@ -1,55 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/svg.dart';
+import '../Auth/profile_screen.dart';
 
-import '../Appcolors.dart';
-
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
-
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
   @override
-  State<SignupScreen> createState() => _StudentSignupScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _StudentSignupScreenState extends State<SignupScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final nameController = TextEditingController();
-  final rollNoController = TextEditingController();
+class _SignUpScreenState extends State<SignUpScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
   bool _isLoading = false;
 
-  void _signup() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _signUp() async {
     setState(() => _isLoading = true);
-
     try {
-      final authResult =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final authResult = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-
       await FirebaseFirestore.instance
           .collection('users')
           .doc(authResult.user!.uid)
           .set({
-        'name': nameController.text.trim(),
-        'rollNo': rollNoController.text.trim(),
         'email': emailController.text.trim(),
         'isAdmin': false,
         'createdAt': Timestamp.now(),
       });
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Signup successful!')));
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileFormScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Signup failed. Please try again.';
+      if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered.';
+      } else if (e.code == 'weak-password') {
+        message = 'Password should be at least 6 characters.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Please enter a valid email address.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Signup failed: ${e.toString()}')),
+      );
     }
-
     setState(() => _isLoading = false);
   }
 
@@ -58,74 +59,72 @@ class _StudentSignupScreenState extends State<SignupScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          SizedBox.expand(
-            child: Image.asset(
-              'Assets/images/maggie.png', // replace with your image path
+          Positioned.fill(
+            child: SvgPicture.asset(
+              'Assets/images/login.svg',
               fit: BoxFit.cover,
+
+            ),),
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.5), // adjust opacity as needed
             ),
           ),
-          Container(
-            color: Colors.black.withOpacity(0.4),
-          ),
           Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (val) =>
-                        val == null || val.isEmpty ? 'Enter name' : null,
-                  ),
-                  TextFormField(
-                    controller: rollNoController,
-                    decoration: const InputDecoration(labelText: 'Roll No'),
-                    validator: (val) =>
-                        val == null || val.isEmpty ? 'Enter roll number' : null,
-                  ),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (val) => val == null || !val.contains('@')
-                        ? 'Enter valid email'
-                        : null,
-                  ),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: const InputDecoration(labelText: 'Password'),
-                    obscureText: true,
-                    validator: (val) =>
-                        val == null || val.length < 6 ? 'Min 6 chars' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                    onPressed: _signup,
-                    child: const Text('Sign Up'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:MessColors.test,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Create Account",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
-                        ),)
-,                ],
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: "Email",
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: "Password",
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child:
+                  _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                      onPressed: _signUp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[500],
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),),
+                      child: const Text("Sign Up",style: TextStyle(color:Colors.black,fontSize: 18),),
+                    ),),
+                  ],
+                ),
               ),
             ),
           ),
