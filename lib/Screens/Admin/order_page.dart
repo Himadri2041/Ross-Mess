@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AdminOrders extends StatelessWidget {
   const AdminOrders({Key? key}) : super(key: key);
@@ -9,10 +11,29 @@ class AdminOrders extends StatelessWidget {
     if (timestamp == null) return '';
     return DateFormat('MMMM d, yyyy').format(timestamp.toDate());
   }
+
   String _formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     return DateFormat('h:mm a').format(timestamp.toDate());
   }
+
+  Future<void> sendOrderDoneNotification(String userId, String name) async {
+
+    final url = Uri.parse("http://192.168.31.163:3000/notify-order-ready");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"userId": userId, "name": name}),
+    );
+
+    if (response.statusCode == 200) {
+      debugPrint(" Notification sent to $name");
+    } else {
+      debugPrint(" Failed to send notification: ${response.body}");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,9 +81,9 @@ class AdminOrders extends StatelessWidget {
               final data = doc.data() as Map<String, dynamic>;
               final items = data['items'] as List<dynamic>;
               final timestamp = data['timestamp'] as Timestamp?;
+              final userId = data['userId'] ?? '';
               final name = data['name'] ?? 'Unknown';
               final phone = data['phone'] ?? 'N/A';
-
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +156,7 @@ class AdminOrders extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '₹${(item['price'] ?? 0)*(item['quantity']??1)}',
+                            '₹${(item['price'] ?? 0) * (item['quantity'] ?? 1)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -145,21 +166,45 @@ class AdminOrders extends StatelessWidget {
                       ),
                     );
                   }).toList(),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        await FirebaseFirestore.instance
-                            .collection('userOrders')
-                            .doc(doc.id)
-                            .delete();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Order marked as done'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        try {
+                          if (userId == '') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('User ID missing')),
+                            );
+                            return;
+                          }
+
+                          // 🔍 Get name from Firestore
+                          final userDoc = await FirebaseFirestore.instance
+                              .collection("users")
+                              .doc(userId)
+                              .get();
+                          final actualName = userDoc.data()?['name'] ?? 'User';
+
+                          // 🟡 Notify user
+                          await sendOrderDoneNotification(userId, actualName);
+
+                          // 🗑 Delete the order
+                          await FirebaseFirestore.instance
+                              .collection("userOrders")
+                              .doc(doc.id)
+                              .delete();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Order marked done & $actualName notified'),
+                            ),
+                          );
+                        } catch (e) {
+                          debugPrint(" Error: $e");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to complete order')),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Mark as Done'),
@@ -182,4 +227,3 @@ class AdminOrders extends StatelessWidget {
     );
   }
 }
-

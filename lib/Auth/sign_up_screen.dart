@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../Auth/profile_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -18,10 +19,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   void _signUp() async {
     setState(() => _isLoading = true);
     try {
+      // Firebase Auth signup
       final authResult = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      // Get FCM token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      // Save user to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(authResult.user!.uid)
@@ -29,7 +36,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'email': emailController.text.trim(),
         'isAdmin': false,
         'createdAt': Timestamp.now(),
+        'fcmToken': fcmToken,
       });
+
+      // Subscribe user to topic (for bulk notifications)
+      await FirebaseMessaging.instance.subscribeToTopic('allUsers');
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -63,11 +75,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: SvgPicture.asset(
               'Assets/images/login.svg',
               fit: BoxFit.cover,
-
-            ),),
+            ),
+          ),
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.5), // adjust opacity as needed
+              color: Colors.black.withOpacity(0.5),
             ),
           ),
           Center(
@@ -108,21 +120,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       obscureText: true,
                     ),
                     const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child:
-                  _isLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                      onPressed: _signUp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[500],
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),),
-                      child: const Text("Sign Up",style: TextStyle(color:Colors.black,fontSize: 18),),
-                    ),),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : ElevatedButton(
+                        onPressed: _signUp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[500],
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "Sign Up",
+                          style: TextStyle(
+                              color: Colors.black, fontSize: 18),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

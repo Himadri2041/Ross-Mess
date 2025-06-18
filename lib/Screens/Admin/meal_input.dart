@@ -22,6 +22,11 @@ class _MealInputScreenState extends State<MealInputScreen> {
   void initState() {
     super.initState();
     mealItems = List.from(widget.initialItems);
+
+    // Attach controllers to each item
+    for (var item in mealItems) {
+      item['controller'] = TextEditingController(text: item['name'] ?? '');
+    }
   }
 
   void addMealItem() {
@@ -36,18 +41,19 @@ class _MealInputScreenState extends State<MealInputScreen> {
 
   void deleteMealItem(int index) {
     setState(() {
-      mealItems[index]['controller']?.dispose(); // cleanup
+      mealItems[index]['controller']?.dispose();
       mealItems.removeAt(index);
     });
   }
 
   void saveMenu() {
-    final cleanedItems = mealItems
-        .map((item) => {
-              'name': item['controller'].text.trim(),
-              'image': item['image'],
-            })
-        .toList();
+    final cleanedItems = mealItems.map((item) {
+      final name = item['controller']?.text.trim() ?? '';
+      return {
+        'name': name,
+        'image': item['image'],
+      };
+    }).toList();
 
     if (cleanedItems.any((item) => item['name'].isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,7 +156,7 @@ class _MealInputScreenState extends State<MealInputScreen> {
                 minimumSize: const Size(double.infinity, 48),
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),

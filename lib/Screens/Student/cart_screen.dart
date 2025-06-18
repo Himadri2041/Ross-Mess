@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../Providers/cart_provider.dart';
 import '../../Widgets/cart_card.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -40,6 +42,23 @@ class _CartScreenState extends State<CartScreen> {
       'phone': data['phone'],
     };
   }
+  Future<void> notifyAdmins(String userName) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.31.163:3000/notify-order-placed'), // ⚠️ Replace with your real IP or emulator proxy
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userName': userName}),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Admins notified');
+      } else {
+        print('❌ Failed to notify admins: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error sending notification: $e');
+    }
+  }
 
   void _placeOrder(BuildContext context, CartProvider cart) async {
     if (cart.items.isEmpty) return;
@@ -52,7 +71,8 @@ class _CartScreenState extends State<CartScreen> {
         'totalPrice': cart.totalPrice,
         'name': userInfo['name'],
         'phone': userInfo['phone'],
-        'note': _noteController.text.trim(), // 👈 user note included
+        'userId': FirebaseAuth.instance.currentUser!.uid,
+        'note': _noteController.text.trim(),
         'items': cart.items.values.map((item) => {
           'title': item.title,
           'price': item.price,
@@ -62,6 +82,10 @@ class _CartScreenState extends State<CartScreen> {
       };
 
       await FirebaseFirestore.instance.collection('userOrders').add(orderData);
+
+      await notifyAdmins(userInfo['name'] ?? 'Anonymous');
+
+
       cart.clearCart();
       _noteController.clear();
 

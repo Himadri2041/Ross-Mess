@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ross_mess_app/Screens/Admin/bill_page.dart';
 import 'package:ross_mess_app/Screens/Admin/extras_upload_page.dart';
 import 'package:ross_mess_app/Screens/Admin/attendance.dart';
+import 'package:ross_mess_app/Screens/Admin/image_upload.dart';
 import '../../Appcolors.dart';
 import 'menu_upload_page.dart';
 import 'order_page.dart';
@@ -27,8 +28,8 @@ class AdminHome extends StatelessWidget {
                       "Admin Panel",
                       style: TextStyle(
                         fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Chakra_Petch',
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Emily',
                       ),
                     ),
                     Row(
@@ -91,6 +92,14 @@ class AdminHome extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => AdminOrderScreen())),
+                        ),
+                        AdminActionButton(
+                          icon: Icons.upload,
+                          label: "Upload Images",
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => UniversalImageUploader())),
                         ),
                       ],
                     ),

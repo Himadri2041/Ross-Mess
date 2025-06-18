@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AdminOrderScreen extends StatefulWidget {
   @override
@@ -24,6 +26,24 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
     super.initState();
     selectedImage = availableImages.first;
   }
+  Future<void> notifyNewItem(String itemTitle) async {
+    try {
+      final url = Uri.parse("http://192.168.31.163:3000/notify-new-item"); // 👈 Replace this with your actual IP or domain
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'itemTitle': itemTitle}),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Notification sent for item: $itemTitle');
+      } else {
+        print('❌ Failed to send notification: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('💥 Error sending notification: $e');
+    }
+  }
 
   void uploadOrderItem() async {
     if (_formKey.currentState!.validate()) {
@@ -35,6 +55,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
         'imageName': selectedImage,
         'timestamp': FieldValue.serverTimestamp(),
       });
+      await notifyNewItem(title);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
