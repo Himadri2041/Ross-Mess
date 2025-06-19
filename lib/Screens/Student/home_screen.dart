@@ -40,17 +40,18 @@ class _HomeScreenState extends State<HomeScreen> {
           .collection('menu')
           .doc('today')
           .get();
+
       if (doc.exists) {
         final data = doc.data();
 
-        List<Map<String, dynamic>> parseItemMaps(dynamic raw) {
+        List<Map<String, String>> parseItemMaps(dynamic raw) {
           if (raw == null) return [];
           if (raw is List) {
-            return raw.map<Map<String, dynamic>>((item) {
+            return raw.map<Map<String, String>>((item) {
               if (item is Map) {
                 return {
-                  'name': item['name'] ?? '',
-                  'image': item['image'] ?? '',
+                  'name': (item['name'] ?? '').toString(),
+                  'image': (item['image'] ?? '').toString(),
                 };
               }
               return {'name': item.toString(), 'image': ''};
@@ -143,64 +144,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget buildSelectedMenuItems() {
-    final items = fullMenu[selectedMeal]?['items'] ?? [];
+    final List<Map<String, String>> items = fullMenu[selectedMeal]?['items'] ?? [];
+
     return items.isEmpty
         ? Center(child: Text('No items available'))
         : SizedBox(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final name = item['name'] ?? '';
-                final image = item['image'] ?? '';
+      height: 150,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final name = item['name'] ?? '';
+          final image = item['image'] ?? '';
 
-                return Container(
-                  width: 110,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(2, 2),
-                      ),
-                    ],
+          return Container(
+            width: 120,
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(2, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipOval(
+                  child: image.isNotEmpty
+                      ? Image.network(
+                    image,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(Icons.broken_image, size: 60),
+                  )
+                      : Icon(Icons.image_not_supported, size: 60),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Circular food image
-                      ClipOval(
-                        child: Image.asset(
-                          image,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Food name
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
+        },
+      ),
+    );
   }
 
-  @override
+
+
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

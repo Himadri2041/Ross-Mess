@@ -93,7 +93,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Providers/cart_provider.dart';
-import '../models/order_item.dart';
 
 class CartCard extends StatelessWidget {
   final CartItem item;
@@ -113,13 +112,24 @@ class CartCard extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
+            // ✅ Use Image.network instead of Image.asset
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                '${item.image}',
+              child: Image.network(
+                item.image,
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image, size: 60),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 16),
@@ -136,7 +146,7 @@ class CartCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\₹${item.price.toStringAsFixed(2)}',
+                    '₹${item.price.toStringAsFixed(2)}',
                     style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],

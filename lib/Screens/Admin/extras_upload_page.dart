@@ -14,21 +14,37 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   double price = 0;
   String? selectedImage;
 
-  final List<String> availableImages = [
-    'maggie.png',
-    'burger.png',
-    'pasta.png',
-    'friends_package.png',
-  ];
+  List<String> availableImages = [];
 
   @override
   void initState() {
     super.initState();
-    selectedImage = availableImages.first;
+    fetchCloudinaryImages();
   }
+
+  Future<void> fetchCloudinaryImages() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('images')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      final List<String> urls = snapshot.docs.map((doc) {
+        return doc['url'] as String;
+      }).where((url) => url.isNotEmpty).toList();
+
+      setState(() {
+        availableImages = urls;
+        selectedImage = urls.isNotEmpty ? urls.first : null;
+      });
+    } catch (e) {
+      print("❌ Error fetching Cloudinary images: $e");
+    }
+  }
+
   Future<void> notifyNewItem(String itemTitle) async {
     try {
-      final url = Uri.parse("http://192.168.31.163:3000/notify-new-item"); // 👈 Replace this with your actual IP or domain
+      final url = Uri.parse("http://192.168.31.163:3000/notify-new-item");
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -52,23 +68,23 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       await FirebaseFirestore.instance.collection('orderItems').add({
         'title': title,
         'price': price,
-        'imageName': selectedImage,
+        'imageUrl': selectedImage,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
       await notifyNewItem(title);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎉 Item uploaded successfully!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text('🎉 Item uploaded successfully!')),
       );
 
       setState(() {
         title = '';
         price = 0;
-        selectedImage = availableImages.first;
+        selectedImage =
+        availableImages.isNotEmpty ? availableImages.first : null;
       });
+
       _formKey.currentState!.reset();
     }
   }
@@ -87,7 +103,8 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
             elevation: 6,
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -118,7 +135,10 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                         ),
                       ),
                       onSaved: (val) => title = val!.trim(),
-                      validator: (val) => val == null || val.isEmpty ? 'Enter a title' : null,
+                      validator: (val) =>
+                      val == null || val.isEmpty
+                          ? 'Enter a title'
+                          : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -127,18 +147,19 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                       decoration: InputDecoration(
                         labelText: 'Price',
                         prefixIcon: Icon(Icons.currency_rupee),
+                        fillColor: Colors.white,
+                        filled: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        fillColor: Colors.white,
-                        filled: true,
-
                       ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: TextInputType.numberWithOptions(
+                          decimal: true),
                       onSaved: (val) => price = double.tryParse(val!) ?? 0,
                       validator: (val) {
                         if (val == null || val.isEmpty) return 'Enter price';
-                        if (double.tryParse(val) == null) return 'Enter valid number';
+                        if (double.tryParse(val) == null)
+                          return 'Enter valid number';
                         return null;
                       },
                     ),
@@ -146,7 +167,9 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
 
                     // Image Dropdown
                     DropdownButtonFormField<String>(
-                      value: availableImages.contains(selectedImage) ? selectedImage : null,
+                      value: availableImages.contains(selectedImage)
+                          ? selectedImage
+                          : null,
                       decoration: InputDecoration(
                         labelText: 'Select Image',
                         prefixIcon: Icon(Icons.image),
@@ -156,20 +179,23 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                         fillColor: Colors.white,
                         filled: true,
                       ),
-                      items: availableImages.map((imageName) {
+                      items: availableImages.map((url) {
                         return DropdownMenuItem(
-                          value: imageName,
-                          child: Text(
-                            imageName.split('.').first.replaceAll('_', ' ').toUpperCase(),
+                          value: url,
+                          child: Row(
+                            children: [
+                              Image.network(url, width: 40, height: 40),
+                              const SizedBox(width: 10),
+                              Text("Image"),
+                            ],
                           ),
                         );
                       }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          selectedImage = val;
-                        });
-                      },
-                      validator: (val) => val == null ? 'Please select an image' : null,
+                      onChanged: (val) => setState(() => selectedImage = val),
+                      validator: (val) =>
+                      val == null
+                          ? 'Please select an image'
+                          : null,
                     ),
                     const SizedBox(height: 30),
 

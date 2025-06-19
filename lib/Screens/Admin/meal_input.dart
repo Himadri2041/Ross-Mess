@@ -1,39 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MealInputScreen extends StatefulWidget {
   final String mealType;
   final List<Map<String, dynamic>> initialItems;
 
-  MealInputScreen({required this.mealType, this.initialItems = const []});
+  const MealInputScreen({required this.mealType, this.initialItems = const []});
 
   @override
   _MealInputScreenState createState() => _MealInputScreenState();
 }
 
 class _MealInputScreenState extends State<MealInputScreen> {
-  final predefinedImages = {
-    'Maggi': 'Assets/images/maggie.png',
-    'Dal': 'Assets/images/dal.jpg',
-  };
-
   List<Map<String, dynamic>> mealItems = [];
+  List<Map<String, String>> cloudImages = [];
 
   @override
   void initState() {
     super.initState();
     mealItems = List.from(widget.initialItems);
-
-    // Attach controllers to each item
     for (var item in mealItems) {
       item['controller'] = TextEditingController(text: item['name'] ?? '');
     }
+    fetchCloudImages();
+  }
+
+  Future<void> fetchCloudImages() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('images')
+        .orderBy('timestamp', descending: true)
+        .get();
+
+    setState(() {
+      cloudImages = snapshot.docs.map<Map<String, String>>((doc) {
+        final data = doc.data();
+        return {
+          'label': (data['tag'] ?? 'Image').toString(),
+          'url': data['url'].toString(),
+        };
+      }).toList();
+    });
   }
 
   void addMealItem() {
     setState(() {
       mealItems.add({
         'name': '',
-        'image': predefinedImages.values.first,
+        'image': null,
         'controller': TextEditingController(),
       });
     });
@@ -55,9 +68,9 @@ class _MealInputScreenState extends State<MealInputScreen> {
       };
     }).toList();
 
-    if (cleanedItems.any((item) => item['name'].isEmpty)) {
+    if (cleanedItems.any((item) => item['name'].isEmpty || item['image'] == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("All items must have a name")),
+        SnackBar(content: Text("Each item must have a name and an image")),
       );
       return;
     }
@@ -99,7 +112,9 @@ class _MealInputScreenState extends State<MealInputScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Image.asset(item['image'], width: 70, height: 50),
+                          item['image'] != null
+                              ? Image.network(item['image'], width: 70, height: 50, fit: BoxFit.cover)
+                              : Container(width: 70, height: 50, color: Colors.grey[300]),
                           const SizedBox(width: 12),
                           Expanded(
                             child: TextField(
@@ -113,31 +128,29 @@ class _MealInputScreenState extends State<MealInputScreen> {
                           const SizedBox(width: 8),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.image),
-                            onSelected: (selectedImage) {
-                              setState(() {
-                                item['image'] = selectedImage;
-                              });
-                            },
                             itemBuilder: (context) {
-                              return predefinedImages.entries.map((entry) {
+                              return cloudImages.map((img) {
                                 return PopupMenuItem<String>(
-                                  value: entry.value,
+                                  value: img['url']!,
                                   child: Row(
                                     children: [
-                                      Image.asset(entry.value,
-                                          width: 30, height: 30),
+                                      Image.network(img['url']!, width: 30, height: 30),
                                       const SizedBox(width: 8),
-                                      Text(entry.key),
+                                      Text(img['label'] ?? 'Image'),
                                     ],
                                   ),
                                 );
                               }).toList();
                             },
+                            onSelected: (value) {
+                              setState(() {
+                                item['image'] = value;
+                              });
+                            },
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.black),
+                            icon: const Icon(Icons.delete),
                             onPressed: () => deleteMealItem(index),
-                            tooltip: "Delete Item",
                           ),
                         ],
                       ),
@@ -146,21 +159,17 @@ class _MealInputScreenState extends State<MealInputScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 10),
             ElevatedButton.icon(
               onPressed: addMealItem,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text("Add Meal"),
+              icon: Icon(Icons.add),
+              label: Text("Add Meal"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber.shade500,
-                minimumSize: const Size(double.infinity, 48),
+                backgroundColor: Colors.amber,
                 foregroundColor: Colors.white,
-                padding:
-                const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 5,
               ),
             ),
           ],

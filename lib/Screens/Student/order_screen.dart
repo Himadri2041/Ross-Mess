@@ -179,7 +179,7 @@ import '../../Widgets/cart_card.dart';
 import '../../models/order_item.dart';
 import '../../Appcolors.dart';
 import 'cart_screen.dart';
-import 'home_screen.dart'; // If you're using a custom color file
+import 'home_screen.dart';
 
 class OrderScreen extends StatelessWidget {
   const OrderScreen({super.key});
@@ -191,13 +191,13 @@ class OrderScreen extends StatelessWidget {
       final item = OrderItem(
         title: data['title'],
         price: (data['price'] ?? 0).toDouble(),
-        image: 'Assets/images/${data['imageName']}',
+        image: data['imageUrl'], // ✅ Use imageUrl directly
       );
 
       await FirebaseFirestore.instance.collection('cart').add({
         'title': item.title,
         'price': item.price,
-        'imageName': data['imageName'],
+        'imageUrl': data['imageUrl'],
         'quantity': 1,
         'timestamp': Timestamp.now(),
       });
@@ -243,14 +243,11 @@ class OrderScreen extends StatelessWidget {
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError)
-            return const Center(child: Text('Error loading data'));
-          if (!snapshot.hasData)
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return const Center(child: Text('Error loading data'));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final docs = snapshot.data!.docs;
-          if (docs.isEmpty)
-            return const Center(child: Text('No order items available'));
+          if (docs.isEmpty) return const Center(child: Text('No order items available'));
 
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -275,14 +272,23 @@ class OrderScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Image
+                    // ✅ Cloudinary image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'Assets/images/${data['imageName']}',
+                      child: Image.network(
+                        data['imageUrl'] ?? '',
                         width: 90,
                         height: 90,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 90),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return SizedBox(
+                            width: 90,
+                            height: 90,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -313,12 +319,11 @@ class OrderScreen extends StatelessWidget {
 
                     // Add Button
                     IconButton(
-                      icon:
-                          Icon(Icons.add_circle, color: Colors.amber, size: 30),
+                      icon: Icon(Icons.add_circle, color: Colors.amber, size: 30),
                       onPressed: () => addToCart(context, {
                         'title': data['title'],
                         'price': data['price'],
-                        'imageName': data['imageName'],
+                        'imageUrl': data['imageUrl'],
                       }),
                     ),
                   ],
@@ -339,15 +344,13 @@ class OrderScreen extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
               child: IconButton(
                 icon: const Icon(Icons.home),
                 onPressed: () {
                   Navigator.pushReplacement(
-                      context, MaterialPageRoute(builder: (_) => HomeScreen()));
+                    context,
+                    MaterialPageRoute(builder: (_) => HomeScreen()),
+                  );
                 },
               ),
             ),
@@ -370,15 +373,13 @@ class OrderScreen extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
               child: IconButton(
                 icon: const Icon(Icons.shopping_cart),
                 onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CartScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CartScreen()),
+                  );
                 },
               ),
             ),
@@ -387,15 +388,13 @@ class OrderScreen extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Container(
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
               child: IconButton(
                 icon: const Icon(Icons.receipt_long),
                 onPressed: () {
                   Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => HomeScreen()));
+                    context,
+                    MaterialPageRoute(builder: (_) => HomeScreen()),
+                  );
                 },
               ),
             ),
