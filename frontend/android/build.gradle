@@ -3,12 +3,16 @@ allprojects {
         google()
         mavenCentral()
     }
+
     configurations.all {
         resolutionStrategy {
             force 'org.bouncycastle:bcprov-jdk18on:1.70'
         }
+
+        exclude group: 'org.robolectric', module: 'robolectric'
     }
 }
+
 
 rootProject.buildDir = "../build"
 subprojects {
