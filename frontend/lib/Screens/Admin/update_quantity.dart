@@ -35,7 +35,6 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
         title: Text('Manage Extras',style:AppFonts.title.copyWith(
           letterSpacing: 0.5,   // optional
         )),
-        backgroundColor: Colors.amber[400],
       ),
       backgroundColor: Colors.grey.shade100,
       body: StreamBuilder<QuerySnapshot>(

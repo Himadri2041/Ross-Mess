@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../fonts.dart';
 
@@ -27,30 +26,41 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
 
   Future<void> fetchBills() async {
     final now = DateTime.now();
-    final currentMonthPrefix = "\${now.year}-\${now.month.toString().padLeft(2, '0')}";
+    final currentMonthPrefix = "${now.year}-${now.month.toString().padLeft(2, '0')}";
 
     final snapshot = await FirebaseFirestore.instance.collection('attendance').get();
     Map<String, double> bills = {};
 
     for (var doc in snapshot.docs) {
       final docId = doc.id;
-
       if (!docId.startsWith(currentMonthPrefix)) continue;
 
-      Map<String, dynamic> dateData = doc.data();
+      final dateData = doc.data();
 
       for (var roll in dateData.keys) {
-        Map<String, dynamic> studentMeals = Map<String, dynamic>.from(dateData[roll]);
+        final studentMealsRaw = dateData[roll];
+        if (studentMealsRaw is Map<String, dynamic>) {
+          final studentMeals = studentMealsRaw;
 
-        for (var meal in studentMeals.keys) {
-          Map<String, dynamic> mealData = Map<String, dynamic>.from(studentMeals[meal]);
+          for (var meal in studentMeals.keys) {
+            final mealDataRaw = studentMeals[meal];
+            if (mealDataRaw is Map<String, dynamic>) {
+              // Add meal price if meal was taken
+              if (mealDataRaw.containsKey('price')) {
+                double mealPrice = (mealDataRaw['price'] ?? 0).toDouble();
+                bills[roll] = (bills[roll] ?? 0) + mealPrice;
+              }
 
-          if (mealData.containsKey('extras')) {
-            List extras = mealData['extras'];
-
-            for (var extra in extras) {
-              double price = (extra['price'] ?? 0).toDouble();
-              bills[roll] = (bills[roll] ?? 0) + price;
+              // Add extras price
+              if (mealDataRaw.containsKey('extras')) {
+                final extras = mealDataRaw['extras'];
+                if (extras is List) {
+                  for (var extra in extras) {
+                    double price = (extra['price'] ?? 0).toDouble();
+                    bills[roll] = (bills[roll] ?? 0) + price;
+                  }
+                }
+              }
             }
           }
         }
@@ -63,10 +73,11 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
     });
   }
 
+
   Future<void> exportAndDeleteLastMonth() async {
     final now = DateTime.now();
     final lastMonth = DateTime(now.year, now.month - 1);
-    final lastMonthPrefix = "\${lastMonth.year}-\${lastMonth.month.toString().padLeft(2, '0')}";
+    final lastMonthPrefix = "${lastMonth.year}-${lastMonth.month.toString().padLeft(2, '0')}";
 
     final snapshot = await FirebaseFirestore.instance.collection('attendance').get();
     Map<String, double> bills = {};
@@ -75,19 +86,25 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
       final docId = doc.id;
       if (!docId.startsWith(lastMonthPrefix)) continue;
 
-      Map<String, dynamic> dateData = doc.data();
+      final dateData = doc.data();
 
       for (var roll in dateData.keys) {
-        Map<String, dynamic> studentMeals = Map<String, dynamic>.from(dateData[roll]);
+        final studentMealsRaw = dateData[roll];
+        if (studentMealsRaw is Map<String, dynamic>) {
+          final studentMeals = studentMealsRaw;
 
-        for (var meal in studentMeals.keys) {
-          Map<String, dynamic> mealData = Map<String, dynamic>.from(studentMeals[meal]);
-
-          if (mealData.containsKey('extras')) {
-            List extras = mealData['extras'];
-            for (var extra in extras) {
-              double price = (extra['price'] ?? 0).toDouble();
-              bills[roll] = (bills[roll] ?? 0) + price;
+          for (var meal in studentMeals.keys) {
+            final mealDataRaw = studentMeals[meal];
+            if (mealDataRaw is Map<String, dynamic>) {
+              if (mealDataRaw.containsKey('extras')) {
+                final extras = mealDataRaw['extras'];
+                if (extras is List) {
+                  for (var extra in extras) {
+                    double price = (extra['price'] ?? 0).toDouble();
+                    bills[roll] = (bills[roll] ?? 0) + price;
+                  }
+                }
+              }
             }
           }
         }
@@ -96,7 +113,7 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
 
     if (bills.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(" No last month bills to export or delete.")),
+        const SnackBar(content: Text("No last month bills to export or delete.")),
       );
       return;
     }
@@ -109,7 +126,7 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
     });
 
     final dir = await getExternalStorageDirectory();
-    final path = "\${dir!.path}/student_bills_\${lastMonthPrefix}.xlsx";
+    final path = "${dir!.path}/student_bills_${lastMonthPrefix}.xlsx";
     final fileBytes = excel.encode();
     final file = File(path)..createSync(recursive: true)..writeAsBytesSync(fileBytes!);
     await OpenFile.open(file.path);
@@ -118,7 +135,7 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Confirm Deletion"),
-        content: Text("Do you want to delete last month's data (\$lastMonthPrefix) from Firestore after exporting?"),
+        content: Text("Do you want to delete last month's data ($lastMonthPrefix) from Firestore after exporting?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -139,11 +156,11 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
         }
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(" Deleted last month's data from Firestore.")),
+        SnackBar(content: Text("Deleted last month's data from Firestore.")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(" Deletion canceled.")),
+        SnackBar(content: Text("Deletion canceled.")),
       );
     }
   }
@@ -151,9 +168,9 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title:  Text("Total Bill Report",style:AppFonts.title.copyWith(
-        letterSpacing: 0.5,   // optional
-      ))),
+      appBar: AppBar(
+        title: Text("Total Bill Report", style: AppFonts.title.copyWith(letterSpacing: 0.5)),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : studentBills.isEmpty
@@ -164,8 +181,8 @@ class _TotalBillScreenState extends State<TotalBillScreen> {
           final roll = studentBills.keys.elementAt(index);
           final bill = studentBills[roll]!;
           return ListTile(
-            title: Text("Roll: \$roll"),
-            trailing: Text("₹\${bill.toStringAsFixed(2)}"),
+            title: Text("Roll: $roll"),
+            trailing: Text("₹${bill.toStringAsFixed(2)}"),
           );
         },
       ),

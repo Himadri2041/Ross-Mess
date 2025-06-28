@@ -75,6 +75,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (v) => v == null || v.isEmpty ? "Enter your age" : null,
+
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -95,9 +96,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
-                  validator: (v) => v == null || v.isEmpty ? "Enter your phone number" : null,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return "Enter your phone number";
+                    } else if (v.length != 10) {
+                      return "Phone number must be exactly 10 digits";
+                    }
+                    return null;
+                  },
                 ),
-
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: yearController,

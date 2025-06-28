@@ -20,7 +20,7 @@ class AdminOrders extends StatelessWidget {
   }
 
   Future<void> sendOrderDoneNotification(String userId, String name) async {
-    final url = Uri.parse("http://192.168.31.180:3000/notify-order-ready");
+    final url = Uri.parse("https://ross-mess.onrender.com/notify-order-ready");
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -37,16 +37,11 @@ class AdminOrders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         title: Text(
           'Pending Orders',
-          style: AppFonts.title.copyWith(
-            letterSpacing: 0.5,   // optional
-          ),
-
+          style: AppFonts.title.copyWith(letterSpacing: 0.5),
         ),
-        backgroundColor: Colors.white,
         centerTitle: false,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -73,7 +68,6 @@ class AdminOrders extends StatelessWidget {
 
           final orders = snapshot.data!.docs;
 
-          // ✅ Manual sort by timestamp descending
           orders.sort((a, b) {
             final t1 = a['timestamp'] as Timestamp?;
             final t2 = b['timestamp'] as Timestamp?;
@@ -145,8 +139,7 @@ class AdminOrders extends StatelessWidget {
                               width: 60,
                               height: 60,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image),
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
                               loadingBuilder: (context, child, progress) {
                                 if (progress == null) return child;
                                 return const SizedBox(
@@ -204,22 +197,53 @@ class AdminOrders extends StatelessWidget {
                               .collection("users")
                               .doc(userId)
                               .get();
-                          final actualName = userDoc.data()?['name'] ?? 'User';
+                          final userData = userDoc.data();
+                          if (userData == null || !userData.containsKey('rollNo')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('User roll number missing')),
+                            );
+                            return;
+                          }
 
+                          final actualName = userData['name'] ?? 'User';
+                          final roll = userData['rollNo'].toString();
+
+                          // ✅ Send notification
                           await sendOrderDoneNotification(userId, actualName);
 
+                          // ✅ Update order status
                           await FirebaseFirestore.instance
                               .collection("userOrders")
                               .doc(doc.id)
                               .update({'status': 'ready'});
 
+                          // ✅ Prepare extrasData only
+                          final extrasData = items.map((item) => {
+                            'item': item['title'],
+                            'price': item['price'],
+                            'quantity': item['quantity'],
+                          }).toList();
+
+                          // ✅ Prepare date docId
+                          final today = DateTime.now();
+                          final docId =
+                              "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+
+                          // ✅ Update attendance by adding only extras
+                          await FirebaseFirestore.instance
+                              .collection('attendance')
+                              .doc(docId)
+                              .set({
+                            roll: {'extras': extrasData},
+                          }, SetOptions(merge: true));
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Order marked ready & $actualName notified'),
+                              content: Text('Order marked ready, $actualName notified & bill added'),
                             ),
                           );
                         } catch (e) {
-                          debugPrint(" Error: $e");
+                          debugPrint("❌ Error: $e");
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Failed to mark order as ready')),
                           );
@@ -246,4 +270,3 @@ class AdminOrders extends StatelessWidget {
     );
   }
 }
-
