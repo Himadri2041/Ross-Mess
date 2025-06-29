@@ -18,6 +18,9 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   List<Map<String, String>> availableImages = [];
   Map<String, String>? selectedImage;
 
+  bool _isLoadingImages = false;
+  bool _isUploading = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +28,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   }
 
   Future<void> fetchCloudinaryImages() async {
+    setState(() => _isLoadingImages = true);
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('images')
@@ -44,7 +48,10 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
         selectedImage = images.isNotEmpty ? images.first : null;
       });
     } catch (e) {
-      print("❌ Error fetching Cloudinary images: $e");
+      print("❌ Error fetching images: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to load images")));
+    } finally {
+      setState(() => _isLoadingImages = false);
     }
   }
 
@@ -58,9 +65,9 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       );
 
       if (response.statusCode == 200) {
-        print('✅ Notification sent for item: $itemTitle');
+        print('✅ Notification sent');
       } else {
-        print('❌ Failed to send notification: ${response.statusCode}');
+        print('❌ Notification failed: ${response.statusCode}');
       }
     } catch (e) {
       print('💥 Error sending notification: $e');
@@ -68,9 +75,13 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   }
 
   void uploadOrderItem() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
+    _formKey.currentState!.save();
+
+    setState(() => _isUploading = true);
+
+    try {
       await FirebaseFirestore.instance.collection('orderItems').add({
         'title': title,
         'price': price,
@@ -81,7 +92,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       await notifyNewItem(title);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Item uploaded successfully!')),
+        SnackBar(content: Text('✅ Item uploaded successfully!')),
       );
 
       setState(() {
@@ -91,6 +102,13 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       });
 
       _formKey.currentState!.reset();
+    } catch (e) {
+      print('❌ Upload failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 
@@ -101,14 +119,13 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       appBar: AppBar(
         backgroundColor: Colors.amber[400],
         elevation: 2,
-        title: Text(
-          'Add Extra Item',
-          style: AppFonts.title.copyWith(letterSpacing: 0.5),
-        ),
+        title: Text('Add Extra Item', style: AppFonts.title.copyWith(letterSpacing: 0.5)),
         iconTheme: IconThemeData(color: Colors.black),
       ),
       body: Center(
-        child: SingleChildScrollView(
+        child: _isLoadingImages
+            ? CircularProgressIndicator(color: Colors.amber)
+            : SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -122,11 +139,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                   children: [
                     const Text(
                       "Add Extra Item",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 24),
 
@@ -208,9 +221,14 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: uploadOrderItem,
-                        icon: Icon(Icons.upload),
-                        label: Text("Upload Item", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                        onPressed: _isUploading ? null : uploadOrderItem,
+                        icon: _isUploading
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                            : Icon(Icons.upload),
+                        label: Text(
+                          _isUploading ? "Uploading..." : "Upload Item",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.amber,
                           foregroundColor: Colors.black,

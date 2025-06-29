@@ -187,7 +187,7 @@ class OrderScreen extends StatelessWidget {
   void addToCart(BuildContext context, Map<String, dynamic> data) async {
     try {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-
+      final user = FirebaseAuth.instance.currentUser;
       final item = OrderItem(
         title: data['title'],
         price: (data['price'] ?? 0).toDouble(),
@@ -195,6 +195,7 @@ class OrderScreen extends StatelessWidget {
       );
 
       await FirebaseFirestore.instance.collection('cart').add({
+        'userId': FirebaseAuth.instance.currentUser!.uid,
         'title': item.title,
         'price': item.price,
         'imageUrl': data['imageUrl'],

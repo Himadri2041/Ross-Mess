@@ -20,25 +20,31 @@ class _MenuUploadScreenState extends State<MenuUploadScreen> {
   double? lunchPrice;
   double? dinnerPrice;
   double? snackPrice;
+
+  bool isLoading = false;
+
   Future<void> uploadMenu() async {
+    if (breakfastItems.isEmpty || lunchItems.isEmpty || dinnerItems.isEmpty || snackItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all meal items before uploading!")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
-      if (breakfastItems.isEmpty || lunchItems.isEmpty || dinnerItems.isEmpty || snackItems.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(" Please fill all meal items before uploading!")),
-        );
-        return;
-      }
-      // Upload to Firestore
       await FirebaseFirestore.instance.collection('menu').doc('today').set({
-        'breakfast': {'items': breakfastItems, 'price': breakfastPrice??0.0},
-        'lunch': {'items': lunchItems, 'price': lunchPrice??0.0},
-        'dinner': {'items': dinnerItems, 'price': dinnerPrice??0.0},
-        'snack': {'items': snackItems, 'price': snackPrice??0.0},
+        'breakfast': {'items': breakfastItems, 'price': breakfastPrice ?? 0.0},
+        'lunch': {'items': lunchItems, 'price': lunchPrice ?? 0.0},
+        'dinner': {'items': dinnerItems, 'price': dinnerPrice ?? 0.0},
+        'snack': {'items': snackItems, 'price': snackPrice ?? 0.0},
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-
-      // Call your backend to trigger push notification
+      // Call backend to trigger push notification
       final url = Uri.parse("https://ross-mess.onrender.com/notify-menu-upload");
       final response = await http.post(
         url,
@@ -53,17 +59,20 @@ class _MenuUploadScreenState extends State<MenuUploadScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Menu uploaded but notification failed")),
+          const SnackBar(content: Text("Menu uploaded but notification failed.")),
         );
       }
     } catch (e) {
-      print(" Upload or notification error: $e");
+      print("❌ Upload or notification error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(" Error uploading menu: $e")),
+        SnackBar(content: Text("Error uploading menu: $e")),
       );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
-
 
   Future<void> navigateToMeal(String meal) async {
     List<Map<String, dynamic>> currentItems;
@@ -126,44 +135,39 @@ class _MenuUploadScreenState extends State<MenuUploadScreen> {
     }
   }
 
-
   Widget buildMealTile(String title, IconData icon) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => navigateToMeal(title),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          minVerticalPadding: 20, // (20 * 2) + icon height ≈ 80px total height
+          minVerticalPadding: 20,
           leading: Icon(icon, size: 32),
           title: Text(
             title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
-
         ),
       ),
     );
-
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title:  Text("Upload Menu",style:AppFonts.title.copyWith(
-        letterSpacing: 0.5,   // optional
-      )), actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel", style: TextStyle(color: Colors.white)),
-        ),
-      ]),
+      appBar: AppBar(
+        title: Text("Upload Menu", style: AppFonts.title.copyWith(letterSpacing: 0.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -173,18 +177,18 @@ class _MenuUploadScreenState extends State<MenuUploadScreen> {
             buildMealTile('Snack', Icons.fastfood),
             buildMealTile('Dinner', Icons.nightlight_round_outlined),
             const SizedBox(height: 24),
-            ElevatedButton(
+            isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
               onPressed: uploadMenu,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber[500],
                 minimumSize: const Size(double.infinity, 48),
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text("Upload Menu",
-                  style: TextStyle(color: Colors.black, fontSize: 18,fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
