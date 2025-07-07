@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../fonts.dart';
 
 class SelectMealScreen extends StatelessWidget {
@@ -175,6 +176,26 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
         .set({
       roll: {widget.meal: mealData},
     }, SetOptions(merge: true));
+
+    try {
+      final url = Uri.parse("http://192.168.3.71:3000/notify-attendance-marked");
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'rollNo': roll,
+          'meal': widget.meal,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print(" Attendance notification sent successfully!");
+      } else {
+        print(" Failed to send notification: ${response.body}");
+      }
+    } catch (e) {
+      print(" Error sending notification: $e");
+    }
 
     rollController.clear();
     setState(() {

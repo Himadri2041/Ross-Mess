@@ -3,6 +3,7 @@ import 'package:ross_mess_app/Screens/Admin/bill_page.dart';
 import 'package:ross_mess_app/Screens/Admin/extras_upload_page.dart';
 import 'package:ross_mess_app/Screens/Admin/attendance.dart';
 import 'package:ross_mess_app/Screens/Admin/image_upload.dart';
+import 'package:ross_mess_app/Screens/Admin/notify_users.dart';
 import 'package:ross_mess_app/Screens/Admin/order_ready.dart';
 import 'package:ross_mess_app/Screens/Admin/update_quantity.dart';
 import '../../Appcolors.dart';
@@ -121,6 +122,12 @@ class AdminHome extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => TotalBillScreen())),
+                        ),
+                        AdminActionButton(
+                          icon: Icons.receipt_long,
+                          label: "Notifications",
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => SendNotificationPage())),
                         )
 
                       ],
