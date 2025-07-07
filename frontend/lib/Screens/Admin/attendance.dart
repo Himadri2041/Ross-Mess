@@ -86,6 +86,44 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     });
   }
 
+  // void submitAttendance() async {
+  //   final roll = rollController.text.trim();
+  //   if (roll.isEmpty) return;
+  //
+  //   final today = DateTime.now();
+  //   final docId =
+  //       "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+  //
+  //   final extrasData = orderItems
+  //       .where((item) => selectedItems[item['title']] == true)
+  //       .map((item) => {
+  //     'item': item['title'],
+  //     'price': item['price'],
+  //   })
+  //       .toList();
+  //
+  //   final mealData = {
+  //     'taken': isTaken,
+  //     'veg': isVeg,
+  //     'extras': extrasData,
+  //   };
+  //
+  //   await FirebaseFirestore.instance
+  //       .collection('attendance')
+  //       .doc(docId)
+  //       .set({
+  //     roll: {widget.meal: mealData},
+  //   }, SetOptions(merge: true));
+  //
+  //   rollController.clear();
+  //   setState(() {
+  //     selectedItems.updateAll((key, value) => false);
+  //   });
+  //
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(content: Text("Marked ${widget.meal} for $roll")),
+  //   );
+  // }
   void submitAttendance() async {
     final roll = rollController.text.trim();
     if (roll.isEmpty) return;
@@ -94,6 +132,17 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     final docId =
         "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
+    // Fetch today's menu to get meal price
+    final menuSnapshot = await FirebaseFirestore.instance.collection('menu').doc('today').get();
+    final menuData = menuSnapshot.data();
+    double mealPrice = 0.0;
+
+    if (menuData != null && menuData.containsKey(widget.meal)) {
+      final mealInfo = menuData[widget.meal];
+      mealPrice = (mealInfo['price'] ?? 0).toDouble();
+    }
+
+    // Extras
     final extrasData = orderItems
         .where((item) => selectedItems[item['title']] == true)
         .map((item) => {
@@ -102,10 +151,22 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     })
         .toList();
 
+    // Calculate total price
+    double totalBill = 0.0;
+    if (isTaken) {
+      totalBill += mealPrice;
+    }
+    for (var extra in extrasData) {
+      totalBill += (extra['price'] ?? 0).toDouble();
+    }
+
+    // Save meal attendance
     final mealData = {
       'taken': isTaken,
       'veg': isVeg,
       'extras': extrasData,
+      'price': isTaken ? mealPrice : 0.0,
+      'totalBill': totalBill,
     };
 
     await FirebaseFirestore.instance
@@ -121,7 +182,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Marked ${widget.meal} for $roll")),
+      SnackBar(content: Text("Marked ${widget.meal} for $roll — ₹${totalBill.toStringAsFixed(2)} added")),
     );
   }
 

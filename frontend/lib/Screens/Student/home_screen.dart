@@ -134,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(getMealIcon(meal), size: 32, color: Colors.black87),
                 SizedBox(height: 10),
-                Text(meal, style: TextStyle(fontSize: 16)),
+                Text(meal, style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   name,
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -211,9 +211,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Welcome, $userName "),
+        title: Text("Welcome, $userName ",style:const TextStyle(fontSize: 24,fontWeight:FontWeight.w700)),
         backgroundColor: MessColors.test,
-        elevation: 0,
+        elevation: 2,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())

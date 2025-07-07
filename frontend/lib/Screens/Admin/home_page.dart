@@ -58,19 +58,14 @@ class AdminHome extends StatelessWidget {
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                       children: [
+
                         AdminActionButton(
-                          icon: Icons.receipt_long,
-                          label: "View Orders",
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => AdminOrders())),
-                        ),
-                        AdminActionButton(
-                          icon: Icons.currency_rupee,
-                          label: "Bill",
+                          icon: Icons.upload,
+                          label: "Upload Menu",
                           onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => TotalBillScreen())),
+                                  builder: (_) => MenuUploadScreen())),
                         ),
                         AdminActionButton(
                           icon: Icons.check_circle,
@@ -81,13 +76,20 @@ class AdminHome extends StatelessWidget {
                                   builder: (_) => SelectMealScreen())),
                         ),
                         AdminActionButton(
-                          icon: Icons.upload,
-                          label: "Upload Menu",
+                          icon: Icons.receipt_long,
+                          label: "View Orders",
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => AdminOrders())),
+                        ),
+                        AdminActionButton(
+                          icon: Icons.done_all,
+                          label: "Orders done",
                           onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => MenuUploadScreen())),
+                                  builder: (_) => ReadyOrders())),
                         ),
+
                         AdminActionButton(
                           icon: Icons.fastfood,
                           label: "Add Extras",
@@ -97,7 +99,7 @@ class AdminHome extends StatelessWidget {
                                   builder: (_) => AdminOrderScreen())),
                         ),
                         AdminActionButton(
-                          icon: Icons.upload,
+                          icon: Icons.image,
                           label: "Upload Images",
                           onTap: () => Navigator.push(
                               context,
@@ -105,7 +107,7 @@ class AdminHome extends StatelessWidget {
                                   builder: (_) => UniversalImageUploader())),
                         ),
                         AdminActionButton(
-                          icon: Icons.upload,
+                          icon: Icons.update,
                           label: "Update extras",
                           onTap: () => Navigator.push(
                               context,
@@ -113,13 +115,14 @@ class AdminHome extends StatelessWidget {
                                   builder: (_) => AdminInventoryScreen())),
                         ),
                         AdminActionButton(
-                          icon: Icons.upload,
-                          label: "Orders done",
+                          icon: Icons.currency_rupee,
+                          label: "Bill",
                           onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => ReadyOrders())),
-                        ),
+                                  builder: (_) => TotalBillScreen())),
+                        )
+
                       ],
                     ),
                   ),

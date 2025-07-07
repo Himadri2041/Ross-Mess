@@ -99,8 +99,8 @@ class _UniversalImageUploaderState extends State<UniversalImageUploader> {
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: pickImage,
-              icon: Icon(Icons.photo_library),
-              label: Text("Pick Image"),
+              icon: Icon(Icons.photo_library,color: Colors.black),
+              label: Text("Pick Image",style:TextStyle(color:Colors.black,fontWeight:FontWeight.w600),),
               style:ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber[500],
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
@@ -114,8 +114,8 @@ class _UniversalImageUploaderState extends State<UniversalImageUploader> {
                 ? CircularProgressIndicator()
                 : ElevatedButton.icon(
               onPressed: uploadAndSaveImage,
-              icon: Icon(Icons.cloud_upload),
-              label: Text("Upload"),
+              icon: const Icon(Icons.cloud_upload,color: Colors.black),
+              label: const Text("Upload",style:TextStyle(color:Colors.black,fontWeight:FontWeight.w600)),
                 style:ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber[500],
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),

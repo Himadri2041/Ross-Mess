@@ -3,65 +3,77 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:ross_mess_app/Auth/student_login.dart';
 import '../Auth/profile_screen.dart';
+import '../Screens/Student/home_screen.dart';
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class StudentLoginScreen extends StatefulWidget {
+  const StudentLoginScreen({super.key});
+
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<StudentLoginScreen> createState() => _StudentLoginScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _StudentLoginScreenState extends State<StudentLoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _signUp() async {
+  void _login() async {
     setState(() => _isLoading = true);
     try {
-      // Firebase Auth signup
-      final authResult = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // Firebase Auth login
+      final authResult = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      // Get FCM token
-      final fcmToken = await FirebaseMessaging.instance.getToken();
+      // Get user document from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(authResult.user!.uid)
+          .get();
 
-      // Save user to Firestore
+      if (!userDoc.exists || userDoc['isAdmin'] == true) {
+        // Not a student or no doc
+        await FirebaseAuth.instance.signOut();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Access denied: not a student account.')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Update FCM token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
       await FirebaseFirestore.instance
           .collection('users')
           .doc(authResult.user!.uid)
-          .set({
-        'email': emailController.text.trim(),
-        'isAdmin': false,
-        'createdAt': Timestamp.now(),
+          .update({
         'fcmToken': fcmToken,
       });
 
-      // Subscribe user to topic (for bulk notifications)
+      // Subscribe to topic
       await FirebaseMessaging.instance.subscribeToTopic('allUsers');
 
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const ProfileFormScreen()),
+          MaterialPageRoute(builder: (_) =>  HomeScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
-      String message = 'Signup failed. Please try again.';
-      if (e.code == 'email-already-in-use') {
-        message = 'This email is already registered.';
-      } else if (e.code == 'weak-password') {
-        message = 'Password should be at least 6 characters.';
+      String message = 'Login failed. Please try again.';
+      if (e.code == 'user-not-found') {
+        message = 'No account found with this email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Incorrect password.';
       } else if (e.code == 'invalid-email') {
         message = 'Please enter a valid email address.';
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Signup failed: ${e.toString()}')),
+        SnackBar(content: Text('Login failed: ${e.toString()}')),
       );
     }
     setState(() => _isLoading = false);
@@ -72,17 +84,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background SVG
           Positioned.fill(
             child: SvgPicture.asset(
               'Assets/images/login.svg',
               fit: BoxFit.cover,
             ),
           ),
+          // Dark overlay
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.5),
             ),
           ),
+          // Glass card
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
@@ -96,7 +111,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      "Create Account",
+                      "Student Login",
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -126,44 +141,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: _isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                        onPressed: _signUp,
+                        onPressed: _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.amber[500],
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: const Text(
-                          "Sign Up",
+                          "Login",
                           style: TextStyle(color: Colors.black, fontSize: 18),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Already have an account? ",style:TextStyle(fontWeight:FontWeight.w600 )),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const StudentLoginScreen()),
-                            );
-                          },
-                          child: const Text(
-                            "Login",
-                            style: TextStyle(
-                              color: Colors.amber,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -173,4 +163,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ],
       ),
     );
-  }}
+  }
+}

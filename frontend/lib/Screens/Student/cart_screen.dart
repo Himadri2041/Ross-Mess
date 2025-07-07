@@ -17,7 +17,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final TextEditingController _noteController = TextEditingController();
-
+  bool _isPlacingOrder = false;
   @override
   void dispose() {
     _noteController.dispose();
@@ -28,10 +28,15 @@ class _CartScreenState extends State<CartScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception('User not logged in');
 
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final data = doc.data();
 
-    if (data == null || !data.containsKey('name') || !data.containsKey('phone')) {
+    if (data == null ||
+        !data.containsKey('name') ||
+        !data.containsKey('phone')) {
       throw Exception('User data incomplete');
     }
 
@@ -44,7 +49,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> notifyAdmins(String userName) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.31.180:3000/notify-order-placed'), // Change this IP!
+        Uri.parse("https://ross-mess.onrender.com/notify-order-placed"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'userName': userName}),
       );
@@ -60,7 +65,10 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _placeOrder(BuildContext context, CartProvider cart) async {
-    if (cart.items.isEmpty) return;
+    if (cart.items.isEmpty || _isPlacingOrder) return;
+    setState(() {
+      _isPlacingOrder = true;
+    });
 
     try {
       final userInfo = await _getUserInfo();
@@ -73,16 +81,18 @@ class _CartScreenState extends State<CartScreen> {
         'userId': FirebaseAuth.instance.currentUser!.uid,
         'note': _noteController.text.trim(),
         'status': 'pending',
-        'items': cart.items.values.map((item) => {
-          'title': item.title,
-          'price': item.price,
-          'image': item.image,
-          'quantity': item.quantity,
-        }).toList(),
+        'items': cart.items.values
+            .map((item) => {
+                  'title': item.title,
+                  'price': item.price,
+                  'image': item.image,
+                  'quantity': item.quantity,
+                })
+            .toList(),
       };
 
       await FirebaseFirestore.instance.collection('userOrders').add(orderData);
-      await notifyAdmins(userInfo['name']??'anonymous');
+      await notifyAdmins(userInfo['name'] ?? 'anonymous');
 
       cart.clearCart();
       _noteController.clear();
@@ -98,6 +108,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _confirmAndPlaceOrder(BuildContext context, CartProvider cart) async {
+    if (_isPlacingOrder) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -128,7 +139,7 @@ class _CartScreenState extends State<CartScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Cart'),
+        title: const Text('Your Cart',style:TextStyle(fontSize: 25,fontWeight:FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.amber[500],
       ),
@@ -138,12 +149,12 @@ class _CartScreenState extends State<CartScreen> {
             child: cart.items.isEmpty
                 ? const Center(child: Text('Cart is empty!'))
                 : ListView.builder(
-              itemCount: cart.items.length,
-              itemBuilder: (context, index) {
-                final item = cart.items.values.toList()[index];
-                return CartCard(item: item);
-              },
-            ),
+                    itemCount: cart.items.length,
+                    itemBuilder: (context, index) {
+                      final item = cart.items.values.toList()[index];
+                      return CartCard(item: item);
+                    },
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -156,14 +167,16 @@ class _CartScreenState extends State<CartScreen> {
                   decoration: InputDecoration(
                     labelText: 'Add a note (optional)',
                     hintText: 'e.g., No onions, deliver by 8PM',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Total: ₹${cart.totalPrice.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.right,
                 ),
                 const SizedBox(height: 10),
@@ -173,13 +186,21 @@ class _CartScreenState extends State<CartScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Colors.amber[500],
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     elevation: 4,
                   ),
-                  child: const Text(
-                    'Proceed to Checkout',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: _isPlacingOrder
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Proceed to Checkout',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ],
             ),

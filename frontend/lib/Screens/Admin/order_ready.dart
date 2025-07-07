@@ -18,13 +18,12 @@ class ReadyOrders extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text(
           'Ready Orders',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
-        backgroundColor: Colors.white,
+
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -43,7 +42,16 @@ class ReadyOrders extends StatelessWidget {
           }
 
           final orders = snapshot.data!.docs;
-
+          final now = DateTime.now();
+          for (final order in orders) {
+            final timestamp = order['timestamp'] as Timestamp?;
+            if (timestamp != null) {
+              final orderDate = timestamp.toDate();
+              if (now.difference(orderDate).inDays >= 2) {
+                FirebaseFirestore.instance.collection('userOrders').doc(order.id).delete();
+              }
+            }
+          }
           orders.sort((a, b) {
             final t1 = a['timestamp'] as Timestamp?;
             final t2 = b['timestamp'] as Timestamp?;

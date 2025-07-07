@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../fonts.dart';
 
 class MealInputScreen extends StatefulWidget {
   final String mealType;
   final List<Map<String, dynamic>> initialItems;
+  final double? initialPrice;
 
-  const MealInputScreen({required this.mealType, this.initialItems = const []});
+  const MealInputScreen({
+    required this.mealType,
+    this.initialItems = const [],
+    this.initialPrice,
+  });
 
   @override
   _MealInputScreenState createState() => _MealInputScreenState();
@@ -16,6 +20,7 @@ class MealInputScreen extends StatefulWidget {
 class _MealInputScreenState extends State<MealInputScreen> {
   List<Map<String, dynamic>> mealItems = [];
   List<Map<String, String>> cloudImages = [];
+  TextEditingController priceController = TextEditingController();
 
   @override
   void initState() {
@@ -24,6 +29,7 @@ class _MealInputScreenState extends State<MealInputScreen> {
     for (var item in mealItems) {
       item['controller'] = TextEditingController(text: item['name'] ?? '');
     }
+    priceController.text = widget.initialPrice?.toString() ?? '';
     fetchCloudImages();
   }
 
@@ -77,7 +83,12 @@ class _MealInputScreenState extends State<MealInputScreen> {
       return;
     }
 
-    Navigator.pop(context, cleanedItems);
+    final price = double.tryParse(priceController.text.trim()) ?? 0.0;
+
+    Navigator.pop(context, {
+      'items': cleanedItems,
+      'price': price,
+    });
   }
 
   @override
@@ -85,6 +96,7 @@ class _MealInputScreenState extends State<MealInputScreen> {
     for (var item in mealItems) {
       item['controller']?.dispose();
     }
+    priceController.dispose();
     super.dispose();
   }
 
@@ -93,9 +105,7 @@ class _MealInputScreenState extends State<MealInputScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber[400],
-        title: Text("${widget.mealType} Menu",style:AppFonts.title.copyWith(
-          letterSpacing: 0.5,   // optional
-        )),
+        title: Text("${widget.mealType} Menu", style: AppFonts.title.copyWith(letterSpacing: 0.5)),
         actions: [
           IconButton(onPressed: saveMenu, icon: Icon(Icons.upload_rounded)),
         ],
@@ -104,6 +114,15 @@ class _MealInputScreenState extends State<MealInputScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            TextField(
+              controller: priceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: "Set ${widget.mealType} Price (₹)",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: ListView.builder(
                 itemCount: mealItems.length,
@@ -166,14 +185,12 @@ class _MealInputScreenState extends State<MealInputScreen> {
             ElevatedButton.icon(
               onPressed: addMealItem,
               icon: Icon(Icons.add),
-              label: Text("Add Meal",style: TextStyle(fontSize:18,fontWeight: FontWeight.w600),),
+              label: Text("Add Meal", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],

@@ -14,9 +14,12 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   String title = '';
   double price = 0;
-  String? selectedImage;
 
-  List<String> availableImages = [];
+  List<Map<String, String>> availableImages = [];
+  Map<String, String>? selectedImage;
+
+  bool _isLoadingImages = false;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -25,28 +28,36 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   }
 
   Future<void> fetchCloudinaryImages() async {
+    setState(() => _isLoadingImages = true);
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('images')
           .orderBy('timestamp', descending: true)
           .get();
 
-      final List<String> urls = snapshot.docs.map((doc) {
-        return doc['url'] as String;
-      }).where((url) => url.isNotEmpty).toList();
+      final List<Map<String, String>> images = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'label': (data['tag'] ?? 'Image').toString(),
+          'url': data['url'].toString(),
+        };
+      }).toList();
 
       setState(() {
-        availableImages = urls;
-        selectedImage = urls.isNotEmpty ? urls.first : null;
+        availableImages = images;
+        selectedImage = images.isNotEmpty ? images.first : null;
       });
     } catch (e) {
-      print("❌ Error fetching Cloudinary images: $e");
+      print("❌ Error fetching images: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to load images")));
+    } finally {
+      setState(() => _isLoadingImages = false);
     }
   }
 
   Future<void> notifyNewItem(String itemTitle) async {
     try {
-      final url = Uri.parse("http://192.168.31.180:3000/notify-new-item");
+      final url = Uri.parse("https://ross-mess.onrender.com/notify-new-item");
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -54,9 +65,9 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       );
 
       if (response.statusCode == 200) {
-        print('✅ Notification sent for item: $itemTitle');
+        print('✅ Notification sent');
       } else {
-        print('❌ Failed to send notification: ${response.statusCode}');
+        print('❌ Notification failed: ${response.statusCode}');
       }
     } catch (e) {
       print('💥 Error sending notification: $e');
@@ -64,30 +75,40 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
   }
 
   void uploadOrderItem() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
+    _formKey.currentState!.save();
+
+    setState(() => _isUploading = true);
+
+    try {
       await FirebaseFirestore.instance.collection('orderItems').add({
         'title': title,
         'price': price,
-        'imageUrl': selectedImage,
+        'imageUrl': selectedImage?['url'],
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       await notifyNewItem(title);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('🎉 Item uploaded successfully!')),
+        SnackBar(content: Text('✅ Item uploaded successfully!')),
       );
 
       setState(() {
         title = '';
         price = 0;
-
         selectedImage = availableImages.isNotEmpty ? availableImages.first : null;
       });
 
       _formKey.currentState!.reset();
+    } catch (e) {
+      print('❌ Upload failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 
@@ -98,13 +119,13 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
       appBar: AppBar(
         backgroundColor: Colors.amber[400],
         elevation: 2,
-        title: Text('Add Extra Item', style: AppFonts.title.copyWith(
-          letterSpacing: 0.5,   // optional
-        )),
+        title: Text('Add Extra Item', style: AppFonts.title.copyWith(letterSpacing: 0.5)),
         iconTheme: IconThemeData(color: Colors.black),
       ),
       body: Center(
-        child: SingleChildScrollView(
+        child: _isLoadingImages
+            ? CircularProgressIndicator(color: Colors.amber)
+            : SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -118,11 +139,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                   children: [
                     const Text(
                       "Add Extra Item",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 24),
 
@@ -160,8 +177,8 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                     const SizedBox(height: 16),
 
                     // Image Dropdown
-                    DropdownButtonFormField<String>(
-                      value: availableImages.contains(selectedImage) ? selectedImage : null,
+                    DropdownButtonFormField<Map<String, String>>(
+                      value: selectedImage,
                       decoration: InputDecoration(
                         labelText: 'Select Image',
                         prefixIcon: Icon(Icons.image),
@@ -169,14 +186,28 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                         fillColor: Colors.white,
                         filled: true,
                       ),
-                      items: availableImages.map((url) {
+                      isExpanded: true,
+                      items: availableImages.map((img) {
                         return DropdownMenuItem(
-                          value: url,
+                          value: img,
                           child: Row(
                             children: [
-                              Image.network(url, width: 40, height: 40),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  img['url']!,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                               const SizedBox(width: 10),
-                              Text("Image"),
+                              Expanded(
+                                child: Text(
+                                  img['label']!,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -190,9 +221,14 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: uploadOrderItem,
-                        icon: Icon(Icons.upload),
-                        label: Text("Upload Item",style:TextStyle(fontSize: 18,fontWeight:FontWeight.w600)),
+                        onPressed: _isUploading ? null : uploadOrderItem,
+                        icon: _isUploading
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                            : Icon(Icons.upload),
+                        label: Text(
+                          _isUploading ? "Uploading..." : "Upload Item",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.amber,
                           foregroundColor: Colors.black,
@@ -212,4 +248,3 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
     );
   }
 }
-

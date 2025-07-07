@@ -187,7 +187,7 @@ class OrderScreen extends StatelessWidget {
   void addToCart(BuildContext context, Map<String, dynamic> data) async {
     try {
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
-
+      final user = FirebaseAuth.instance.currentUser;
       final item = OrderItem(
         title: data['title'],
         price: (data['price'] ?? 0).toDouble(),
@@ -195,6 +195,7 @@ class OrderScreen extends StatelessWidget {
       );
 
       await FirebaseFirestore.instance.collection('cart').add({
+        'userId': FirebaseAuth.instance.currentUser!.uid,
         'title': item.title,
         'price': item.price,
         'imageUrl': data['imageUrl'],
@@ -229,9 +230,7 @@ class OrderScreen extends StatelessWidget {
         title: const Text(
           'Order Food',
           style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Chakra_Petch',
-            fontWeight: FontWeight.bold,
+              fontSize: 25,fontWeight:FontWeight.w700
           ),
         ),
         elevation: 4,
@@ -256,7 +255,6 @@ class OrderScreen extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final data = docs[index].data()! as Map<String, dynamic>;
-              final quantity = data['quantity'] ?? 0;
 
               return Container(
                 decoration: BoxDecoration(
@@ -319,8 +317,8 @@ class OrderScreen extends StatelessWidget {
                       ),
                     ),
 
-                    quantity > 0
-                        ? IconButton(
+
+                        IconButton(
                       icon: Icon(Icons.add_circle, color: Colors.amber, size: 30),
                       onPressed: () => addToCart(context, {
                         'title': data['title'],
@@ -328,7 +326,7 @@ class OrderScreen extends StatelessWidget {
                         'imageUrl': data['imageUrl'],
                       }),
                     )
-                        : const Icon(Icons.remove_shopping_cart, color: Colors.grey, size: 30),
+
                   ],
                 ),
               );

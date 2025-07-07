@@ -1,23 +1,4 @@
-// import 'package:flutter/foundation.dart';
-// import '../models/order_item.dart';
-//
-// class CartProvider extends ChangeNotifier {
-//   final List<OrderItem> _items = [];
-//
-//   List<OrderItem> get items => List.unmodifiable(_items);
-//
-//   void addItem(OrderItem item) {
-//     _items.add(item);
-//     notifyListeners();
-//   }
-//
-//   void removeItem(OrderItem item) {
-//     _items.remove(item);
-//     notifyListeners();
-//   }
-//
-//   double get totalPrice => _items.fold(0, (sum, item) => sum + item.price);
-// }
+
 import 'package:flutter/material.dart';
 import '../models/order_item.dart';
 
@@ -56,7 +37,6 @@ class CartProvider with ChangeNotifier {
       _items[title]!.quantity--;
       notifyListeners();
     } else {
-      // Optional: Remove item if quantity hits zero
       removeItem(title);
     }
   }
