@@ -6,13 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 Firebase Admin Initialization
-const serviceAccount = require("./service_account.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-
-// ✅ Route 1: Notify all users when menu is uploaded
 app.post("/notify-menu-upload", async (req, res) => {
   const { day = "today" } = req.body;
 
@@ -50,7 +47,6 @@ app.post("/notify-menu-upload", async (req, res) => {
   }
 });
 
-// ✅ Route 2: Notify admins when an order is placed
 app.post("/notify-order-placed", async (req, res) => {
   const { userName = "Someone" } = req.body;
 
@@ -93,7 +89,6 @@ app.post("/notify-order-placed", async (req, res) => {
   }
 });
 
-// ✅ Route 3: Notify specific user when their order is ready
 app.post("/notify-order-ready", async (req, res) => {
   const { userId, name = "User" } = req.body;
 
@@ -124,7 +119,7 @@ app.post("/notify-order-ready", async (req, res) => {
 app.post("/notify-new-item", async (req, res) => {
   const { itemTitle = "A new item" } = req.body;
 
-  try {
+  try {v
     const snapshot = await admin.firestore().collection("users").get();
     const tokens = snapshot.docs.map(doc => doc.data()?.fcmToken).filter(Boolean);
 
@@ -157,7 +152,90 @@ app.post("/notify-new-item", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// 🚀 Start server
+app.post("/notify-attendance-marked", async (req, res) => {
+  const { rollNo = "", meal = "Meal" } = req.body;
+
+  if (!rollNo) {
+    return res.status(400).json({ message: "rollno is required" });
+  }
+
+  try {
+    
+    const userSnap = await admin
+      .firestore()
+      .collection("users")
+      .where("rollNo", "==", rollNo)
+      .limit(1)
+      .get();
+
+    if (userSnap.empty) {
+      return res.status(404).json({ message: "User with this roll number not found" });
+    }
+
+    const userDoc = userSnap.docs[0];
+    const userData = userDoc.data();
+    const token = userData?.fcmToken;
+    const name = userData?.name || "User";
+
+    if (!token) {
+      return res.status(404).json({ message: "FCM token not found for this user" });
+    }
+
+    const message = {
+      notification: {
+        title: "✅ Attendance Marked!",
+        body: `Hey ${name}, your attendance for ${meal} has been marked successfully. Enjoy! 🍽️`,
+      },
+      token,
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log(`📨 Attendance notification sent to ${name} (roll: ${rollNo})`);
+    res.json({ success: true, response });
+  } catch (error) {
+    console.error("Attendance notification failed:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/notify-custom-message", async (req, res) => {
+  const { title = "Notification", body = "Hello from Admin!" } = req.body;
+
+  try {
+    
+    const snapshot = await admin.firestore().collection("users").get();
+    const tokens = snapshot.docs.map(doc => doc.data()?.fcmToken).filter(Boolean);
+
+    if (tokens.length === 0) {
+      return res.status(404).json({ message: "No user tokens found" });
+    }
+
+    let successCount = 0;
+    for (const token of tokens) {
+      const message = {
+        notification: {
+          title,
+          body,
+        },
+        token,
+      };
+
+      try {
+        await admin.messaging().send(message);
+        successCount++;
+      } catch (err) {
+        console.warn("Failed to send to token:", token, err.message);
+      }
+    }
+
+    console.log(`📨 Custom message sent to ${successCount} users`);
+    res.json({ success: true, sent: successCount });
+  } catch (error) {
+    console.error("Custom notification failed:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT} and accepting all network requests`);
