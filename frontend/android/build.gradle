@@ -1,0 +1,27 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.70'
+        }
+
+        exclude group: 'org.robolectric', module: 'robolectric'
+    }
+}
+
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
